@@ -23,7 +23,7 @@ services:
       - POSTGRES_PASSWORD=stats
 
   ewm-service:
-    build: ./main-service
+    build: ./core/main-service
     image: ewm-server
     container_name: ewm-server
     ports:

@@ -3,13 +3,20 @@ package ru.practicum.statistic;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.MaxAttemptsRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -24,14 +31,19 @@ public class StatClient {
 
     private final RestClient restClient;
     private final String appName;
+    private final DiscoveryClient discoveryClient;
+    private final RetryTemplate retryTemplate;
+    private final String statsServiceId;
 
-    public StatClient(@Value("${stat.server.url}") String serverUrl,
+    public StatClient(DiscoveryClient discoveryClient,
+                      @Value("${stat.server.id:stats-server}") String statsServiceId,
                       @Value("${spring.application.name}") String appName) {
-        log.info("StatClient baseUrl = {}", serverUrl);
-        this.restClient = RestClient.builder()
-                .baseUrl(serverUrl)
-                .build();
+        this.discoveryClient = discoveryClient;
+        this.statsServiceId = statsServiceId;
         this.appName = appName;
+        this.restClient = RestClient.builder()
+                .build();
+        this.retryTemplate = buildRetryTemplate();
     }
 
     public void hit(HttpServletRequest request) {
@@ -44,7 +56,7 @@ public class StatClient {
 
         try {
             restClient.post()
-                    .uri("/hit")
+                    .uri(makeUri("/hit"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(dto)
                     .retrieve()
@@ -75,24 +87,9 @@ public class StatClient {
         String endStr = end.format(FORMATTER);
 
         try {
+            URI uri = buildStatsUri(startStr, endStr, uris, unique);
             return restClient.get()
-                    .uri(uriBuilder -> {
-                        var builder = uriBuilder
-                                .path("/stats")
-                                .queryParam("start", startStr)
-                                .queryParam("end", endStr)
-                                .queryParam("unique", unique);
-
-                        if (uris != null && !uris.isEmpty()) {
-                            for (String uri : uris) {
-                                builder.queryParam("uris", uri);
-                            }
-                        }
-
-                        var uri = builder.build();
-                        log.info("Request stats URI: {}", uri.toString());
-                        return uri;
-                    })
+                    .uri(uri)
                     .retrieve()
                     .onStatus(HttpStatusCode::is5xxServerError, (req, res) -> {
                         throw new ResponseStatusException(
@@ -113,6 +110,53 @@ public class StatClient {
         }
     }
 
+    private RetryTemplate buildRetryTemplate() {
+        RetryTemplate template = new RetryTemplate();
+
+        FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+        backOffPolicy.setBackOffPeriod(3000L);
+        template.setBackOffPolicy(backOffPolicy);
+
+        MaxAttemptsRetryPolicy retryPolicy = new MaxAttemptsRetryPolicy();
+        retryPolicy.setMaxAttempts(3);
+        template.setRetryPolicy(retryPolicy);
+
+        return template;
+    }
+
+    private ServiceInstance getInstance() {
+        List<ServiceInstance> instances = discoveryClient.getInstances(statsServiceId);
+        if (instances == null || instances.isEmpty()) {
+            throw new StatsServerUnavailable(
+                    "Ошибка обнаружения адреса сервиса статистики с id: " + statsServiceId
+            );
+        }
+        return instances.get(0);
+    }
+
+    private URI makeUri(String path) {
+        ServiceInstance instance = retryTemplate.execute(context -> getInstance());
+        return instance.getUri().resolve(path);
+    }
+
+    private URI buildStatsUri(String start,
+                              String end,
+                              List<String> uris,
+                              Boolean unique) {
+        UriComponentsBuilder builder = UriComponentsBuilder
+                .fromUri(makeUri("/stats"))
+                .queryParam("start", start)
+                .queryParam("end", end)
+                .queryParam("unique", unique);
+
+        if (uris != null && !uris.isEmpty()) {
+            for (String uri : uris) {
+                builder.queryParam("uris", uri);
+            }
+        }
+
+        return builder.build().encode().toUri();
+    }
 
     private String extractClientIp(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");

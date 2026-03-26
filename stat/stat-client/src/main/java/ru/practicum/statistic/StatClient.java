@@ -155,7 +155,7 @@ public class StatClient {
             }
         }
 
-        return builder.build(true).toUri();
+        return builder.build().encode().toUri();
     }
 
     private String extractClientIp(HttpServletRequest request) {

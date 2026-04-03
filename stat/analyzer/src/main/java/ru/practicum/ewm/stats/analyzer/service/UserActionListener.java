@@ -25,7 +25,7 @@ public class UserActionListener {
         UserActionAvro action = AvroUtils.fromBytes(payload, UserActionAvro.getClassSchema());
 
         double weight = weight(action.getActionType());
-        Instant timestamp = Instant.ofEpochMilli(action.getTimestamp());
+        Instant timestamp = action.getTimestamp() != null ? action.getTimestamp() : Instant.now();
 
         UserEventId id = new UserEventId(action.getUserId(), action.getEventId());
         UserEventInteraction interaction = interactionRepository.findById(id)

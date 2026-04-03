@@ -22,7 +22,7 @@ public class SimilarityListener {
     @Transactional
     public void handle(byte[] payload) {
         EventSimilarityAvro avro = AvroUtils.fromBytes(payload, EventSimilarityAvro.getClassSchema());
-        Instant timestamp = Instant.ofEpochMilli(avro.getTimestamp());
+        Instant timestamp = avro.getTimestamp() != null ? avro.getTimestamp() : Instant.now();
 
         EventPairId id = new EventPairId(avro.getEventA(), avro.getEventB());
         EventSimilarity similarity = similarityRepository.findById(id)

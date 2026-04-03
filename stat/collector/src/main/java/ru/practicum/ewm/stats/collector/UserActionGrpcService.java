@@ -30,7 +30,7 @@ public class UserActionGrpcService extends UserActionControllerGrpc.UserActionCo
                 .setUserId(request.getUserId())
                 .setEventId(request.getEventId())
                 .setActionType(mapAction(request.getActionType()))
-                .setTimestamp(toMillis(request))
+                .setTimestamp(toInstant(request))
                 .build();
 
         kafkaTemplate.send(userActionsTopic, String.valueOf(request.getEventId()), AvroUtils.toBytes(avro));
@@ -39,11 +39,12 @@ public class UserActionGrpcService extends UserActionControllerGrpc.UserActionCo
         responseObserver.onCompleted();
     }
 
-    private long toMillis(UserActionProto request) {
+    private Instant toInstant(UserActionProto request) {
         if (!request.hasTimestamp()) {
-            return Instant.now().toEpochMilli();
+            return Instant.now();
         }
-        return request.getTimestamp().getSeconds() * 1000L + request.getTimestamp().getNanos() / 1_000_000L;
+        long millis = request.getTimestamp().getSeconds() * 1000L + request.getTimestamp().getNanos() / 1_000_000L;
+        return Instant.ofEpochMilli(millis);
     }
 
     private ActionTypeAvro mapAction(ActionTypeProto type) {

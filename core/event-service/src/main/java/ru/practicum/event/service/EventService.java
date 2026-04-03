@@ -37,4 +37,9 @@ public interface EventService {
     List<ParticipationRequestDto> getEventRequests(Long userId, Long eventId);
 
     EventRequestStatusUpdateResult updateRequests(Long userId, Long eventId, EventRequestStatusUpdateRequest request);
+
+
+    List<EventShortDto> getRecommendations(Long userId, Integer size);
+
+    void likeEvent(Long userId, Long eventId);
 }

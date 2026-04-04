@@ -64,9 +64,11 @@ public class EventController {
 
     @GetMapping("/events/{id}")
     public EventFullDto getPublicEvent(@PathVariable("id") Long eventId,
-                                       @RequestHeader("X-EWM-USER-ID") long userId) {
+                                       @RequestHeader(value = "X-EWM-USER-ID", required = false) Long userId) {
         EventFullDto dto = eventService.getPublicEvent(eventId);
-        collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_VIEW);
+        if (userId != null) {
+            collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_VIEW);
+        }
         return dto;
     }
 

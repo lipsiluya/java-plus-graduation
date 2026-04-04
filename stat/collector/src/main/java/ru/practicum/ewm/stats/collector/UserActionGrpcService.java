@@ -19,7 +19,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class UserActionGrpcService extends UserActionControllerGrpc.UserActionControllerImplBase {
 
-    private final KafkaTemplate<String, byte[]> kafkaTemplate;
+    private final KafkaTemplate<Long, byte[]> kafkaTemplate;
 
     @Value("${app.kafka.topics.user-actions}")
     private String userActionsTopic;
@@ -33,7 +33,7 @@ public class UserActionGrpcService extends UserActionControllerGrpc.UserActionCo
                 .setTimestamp(toInstant(request))
                 .build();
 
-        kafkaTemplate.send(userActionsTopic, String.valueOf(request.getEventId()), AvroUtils.toBytes(avro));
+        kafkaTemplate.send(userActionsTopic, request.getUserId(), AvroUtils.toBytes(avro));
 
         responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();

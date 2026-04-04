@@ -54,11 +54,8 @@ public class UserActionAggregator {
             double oldMin = Math.min(oldWeight, otherWeight);
             double newMin = Math.min(newWeight, otherWeight);
 
-            if (newMin == oldMin) {
-                continue;
-            }
-
-            double updatedMinSum = updateMinSum(eventId, otherEvent, newMin - oldMin);
+            double deltaMin = newMin - oldMin;
+            double updatedMinSum = updateMinSum(eventId, otherEvent, deltaMin);
             double sumA = eventWeightsSum.getOrDefault(eventId, 0.0);
             double sumB = eventWeightsSum.getOrDefault(otherEvent, 0.0);
 
@@ -66,7 +63,7 @@ public class UserActionAggregator {
                 continue;
             }
 
-            double score = updatedMinSum / (sumA * sumB);
+            double score = updatedMinSum / Math.sqrt(sumA * sumB);
             long first = Math.min(eventId, otherEvent);
             long second = Math.max(eventId, otherEvent);
 

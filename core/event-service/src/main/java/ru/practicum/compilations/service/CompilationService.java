@@ -83,6 +83,10 @@ public class CompilationService {
     }
 
     private List<Event> findEventsBy(Set<Long> eventsIds) {
+        if (eventsIds == null || eventsIds.isEmpty()) {
+            return List.of();
+        }
+
         List<Event> events = eventRepository.findEventsByIdIn(eventsIds);
 
         if (events.size() != eventsIds.size()) {

@@ -1,9 +1,11 @@
 package ru.practicum.request.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class ParticipationRequestDto {
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)

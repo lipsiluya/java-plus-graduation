@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.ewm.stats.proto.ActionTypeProto;
 import ru.practicum.requestservice.client.EventRequestClient;
+import ru.practicum.statistic.CollectorClient;
 
 import java.util.function.Supplier;
 
@@ -14,6 +16,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 public class RequestProxyController {
     private final EventRequestClient client;
+    private final CollectorClient collectorClient;
 
     @GetMapping("/{userId}/requests")
     public ResponseEntity<String> getUserRequests(@PathVariable Long userId) {
@@ -23,7 +26,8 @@ public class RequestProxyController {
     @PostMapping("/{userId}/requests")
     public ResponseEntity<String> addParticipationRequest(@PathVariable Long userId,
                                                           @RequestParam Long eventId) {
-        return forward(() -> client.addParticipationRequest(userId, eventId));
+        return forward(() -> client.addParticipationRequest(userId, eventId),
+                () -> collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER));
     }
 
     @PatchMapping("/{userId}/requests/{requestId}/cancel")
@@ -33,8 +37,17 @@ public class RequestProxyController {
     }
 
     private ResponseEntity<String> forward(Supplier<ResponseEntity<String>> call) {
+        return forward(call, () -> {
+        });
+    }
+
+    private ResponseEntity<String> forward(Supplier<ResponseEntity<String>> call, Runnable onSuccess) {
         try {
-            return call.get();
+            ResponseEntity<String> response = call.get();
+            if (response.getStatusCode().is2xxSuccessful()) {
+                onSuccess.run();
+            }
+            return response;
         } catch (FeignException e) {
             int status = e.status() >= 0 ? e.status() : HttpStatus.SERVICE_UNAVAILABLE.value();
             return ResponseEntity.status(status).body(e.contentUTF8());

@@ -1,5 +1,6 @@
 package ru.practicum.ewm.stats.avro;
 
+import lombok.experimental.UtilityClass;
 import org.apache.avro.Schema;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.BinaryEncoder;
@@ -14,10 +15,8 @@ import org.apache.avro.specific.SpecificRecord;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+@UtilityClass
 public final class AvroUtils {
-
-    private AvroUtils() {
-    }
 
     public static byte[] toBytes(SpecificRecord record) {
         DatumWriter<SpecificRecord> writer = new SpecificDatumWriter<>(record.getSchema());

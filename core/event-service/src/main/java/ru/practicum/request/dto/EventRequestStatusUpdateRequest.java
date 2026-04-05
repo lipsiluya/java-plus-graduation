@@ -1,11 +1,13 @@
 package ru.practicum.request.dto;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import ru.practicum.request.model.RequestStatus;
 
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 public class EventRequestStatusUpdateRequest {
 
     private List<Long> requestIds;

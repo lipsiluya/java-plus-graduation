@@ -196,7 +196,7 @@ public class EventServiceImpl implements EventService {
         return eventShortDtos;
     }
 
-    
+
     @Override
     public List<EventFullDto> searchForAdmin(List<Long> users, List<EventState> states, List<Long> categories,
                                              LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
@@ -222,7 +222,7 @@ public class EventServiceImpl implements EventService {
         return dtos;
     }
 
-    
+
     @Override
     public List<EventShortDto> searchForUser(String text, List<Long> categories, Boolean paid,
                                              LocalDateTime rangeStart, LocalDateTime rangeEnd, Boolean onlyAvailable,
@@ -268,8 +268,7 @@ public class EventServiceImpl implements EventService {
     }
 
 
-    
-        @Override
+    @Override
     public List<EventShortDto> getRecommendations(Long userId, Integer size) {
         int limit = size != null ? size : 10;
         List<ru.practicum.ewm.stats.proto.RecommendedEventProto> recommendations;
@@ -309,7 +308,6 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    @Transactional
     public void likeEvent(Long userId, Long eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Событие с id = " + eventId + " не найдено"));
@@ -419,7 +417,7 @@ public class EventServiceImpl implements EventService {
     }
 
 
-        private Map<Long, Double> getEventsRatings(List<Event> events) {
+    private Map<Long, Double> getEventsRatings(List<Event> events) {
         if (events.isEmpty()) {
             return Collections.emptyMap();
         }

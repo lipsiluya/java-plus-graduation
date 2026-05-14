@@ -21,7 +21,6 @@ public class AdminCompilationController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CompilationDto createCompilation(@Valid @RequestBody NewCompilationDto newDto) {
-        CompilationDto result = compilationService.create(newDto);
         return compilationService.create(newDto);
     }
 

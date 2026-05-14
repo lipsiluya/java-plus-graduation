@@ -1,14 +1,16 @@
 package ru.practicum.event.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.event.model.EventState;
 import ru.practicum.user.dto.UserShortDto;
 import ru.practicum.event.model.Location;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 public class EventFullDto {
 
     private String annotation;
@@ -44,5 +46,5 @@ public class EventFullDto {
 
     private String title;
 
-    private Long views;
+    private Double rating;
 }

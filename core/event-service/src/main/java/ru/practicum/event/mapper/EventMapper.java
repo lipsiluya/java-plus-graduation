@@ -69,6 +69,7 @@ public final class EventMapper {
         fullDto.setPublishedOn(event.getPublishedOn());
         fullDto.setState(event.getState() != null ? event.getState() : EventState.PENDING);
         fullDto.setConfirmedRequests(event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0L);
+        fullDto.setRating(0.0);
 
         return fullDto;
     }
@@ -82,6 +83,7 @@ public final class EventMapper {
         dto.setEventDate(event.getEventDate());
         dto.setPaid(event.getPaid() != null ? event.getPaid() : false);
         dto.setConfirmedRequests(event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0L);
+        dto.setRating(0.0);
 
         dto.setCategory(CategoryMapper.toCategoryDto(event.getCategory()));
         dto.setInitiator(UserMapper.toUserShortDto(event.getInitiator()));

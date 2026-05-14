@@ -12,13 +12,17 @@
     <artifactId>stat</artifactId>
     <packaging>pom</packaging>
     <modules>
+        <module>stat-proto</module>
+        <module>stat-avro</module>
         <module>stat-client</module>
         <module>stat-dto</module>
         <module>stat-server</module>
+        <module>collector</module>
+        <module>aggregator</module>
+        <module>analyzer</module>
     </modules>
 
-
-    <dependencyManagement>
+<dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.projectlombok</groupId>

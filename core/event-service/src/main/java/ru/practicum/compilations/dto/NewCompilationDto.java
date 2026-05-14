@@ -3,15 +3,14 @@ package ru.practicum.compilations.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.validator.constraints.Length;
+import jakarta.validation.constraints.Size;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class NewCompilationDto {
@@ -21,6 +20,6 @@ public class NewCompilationDto {
     private Boolean pinned = false;
 
     @NotBlank
-    @Length(max = 50)
+    @Size(max = 50)
     private String title;
 }

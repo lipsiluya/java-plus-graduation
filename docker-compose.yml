@@ -46,3 +46,46 @@ services:
       - POSTGRES_DB=main
       - POSTGRES_USER=main
       - POSTGRES_PASSWORD=main
+
+  reco-db:
+    image: postgres:16.1
+    container_name: reco-db
+    ports:
+      - "7432:5432"
+    environment:
+      - POSTGRES_DB=reco
+      - POSTGRES_USER=reco
+      - POSTGRES_PASSWORD=reco
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-init
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic stats.user-actions.v1 --partitions 1 --replication-factor 1 &&
+       kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic stats.events-similarity.v1 --partitions 1 --replication-factor 1"
+

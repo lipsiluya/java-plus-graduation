@@ -1,6 +1,5 @@
 package ru.practicum.event.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -11,10 +10,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import ru.practicum.ewm.stats.proto.ActionTypeProto;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.NewEventDto;
@@ -25,7 +27,7 @@ import ru.practicum.event.service.EventService;
 import ru.practicum.request.dto.EventRequestStatusUpdateRequest;
 import ru.practicum.request.dto.EventRequestStatusUpdateResult;
 import ru.practicum.request.dto.ParticipationRequestDto;
-import ru.practicum.statistic.StatClient;
+import ru.practicum.statistic.CollectorClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,7 +36,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EventController {
     private final EventService eventService;
-    private final StatClient statClient;
+    private final CollectorClient collectorClient;
 
     @PostMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.CREATED)
@@ -62,10 +64,12 @@ public class EventController {
 
     @GetMapping("/events/{id}")
     public EventFullDto getPublicEvent(@PathVariable("id") Long eventId,
-                                       HttpServletRequest request) {
-        statClient.hit(request);
-
-        return eventService.getPublicEvent(eventId);
+                                       @RequestHeader(value = "X-EWM-USER-ID", required = false) Long userId) {
+        EventFullDto dto = eventService.getPublicEvent(eventId);
+        if (userId != null) {
+            collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_VIEW);
+        }
+        return dto;
     }
 
     @GetMapping("/users/{userId}/events")
@@ -95,11 +99,22 @@ public class EventController {
                                              @RequestParam(defaultValue = "false") Boolean onlyAvailable,
                                              @RequestParam(required = false) String sort,
                                              @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                             @RequestParam(defaultValue = "10") @Positive Integer size,
-                                             HttpServletRequest request) {
-        statClient.hit(request);
-
+                                             @RequestParam(defaultValue = "10") @Positive Integer size) {
         return eventService.searchForUser(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+    }
+
+    @GetMapping("/events/recommendations")
+    public List<EventShortDto> getRecommendations(@RequestHeader("X-EWM-USER-ID") long userId,
+                                                  @RequestParam(defaultValue = "10") @Positive Integer size) {
+        return eventService.getRecommendations(userId, size);
+    }
+
+    @PutMapping("/events/{eventId}/like")
+    @ResponseStatus(HttpStatus.OK)
+    public void likeEvent(@PathVariable Long eventId,
+                          @RequestHeader("X-EWM-USER-ID") long userId) {
+        eventService.likeEvent(userId, eventId);
+        collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_LIKE);
     }
 
     @GetMapping("/users/{userId}/events/{eventId}/requests")
